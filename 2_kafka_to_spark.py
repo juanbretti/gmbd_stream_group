@@ -1,11 +1,11 @@
 from pyspark import SparkConf, SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.sql import Row, SQLContext
-from pyspark.sql.functions import regexp_replace, udf, col
-from pyspark.sql.types import LongType, StringType
+from pyspark.sql.functions import regexp_replace, udf, col, lit
+from pyspark.sql.types import *
 from pyspark.streaming.kafka import KafkaUtils
 import sys
-
+from textblob import TextBlob
 from constants import *
 
 def aggregate_tags_count(new_values, total_sum):
@@ -17,7 +17,7 @@ def get_sql_context_instance(spark_context):
     return globals()['sqlContextSingletonInstance']
 
 # Tweet preprocessing
-def text_cleaup(line):
+def text_cleanup(line):
     line = line.withColumn('tweet', regexp_replace('tweet', r'http\S+', ''))
     line = line.withColumn('tweet', regexp_replace('tweet', '@\w+', ''))
     line = line.withColumn('tweet', regexp_replace('tweet', '#', ''))
@@ -27,38 +27,26 @@ def text_cleaup(line):
     line = line.withColumn('tweet', regexp_replace('tweet', '\t', ' '))
     return line
 
+def polarity_detection(text):
+    return TextBlob(text).sentiment.polarity
+
 def process_rdd(time, rdd, header):
     print("{sep} {header} {sep} {time} {sep}".format(sep="-"*5, time=str(time), header=header))
     try:
         sql_context = get_sql_context_instance(rdd.context)
         row_rdd = rdd.map(lambda w: Row(tweet=w[0], tweet_count=w[1]))
         df = sql_context.createDataFrame(row_rdd)
-        df = text_cleaup(df)
+        df = text_cleanup(df)
 
-        from textblob import TextBlob
+        def dummy_function(data_str):
+            cleaned_str = 'dummyData'
+            return cleaned_str
 
-        def polarity_detection(text):
-            return TextBlob(text).sentiment.polarity
-        def subjectivity_detection(text):
-            print(text)
-            return TextBlob(text).sentiment.subjectivity
+        dummy_function_udf = udf(dummy_function, StringType())
+        df2 = df.withColumn("dummy", dummy_function_udf(df['tweet']))
+        # df2 = df.withColumn("dummy", lit('lliitt'))
 
-        # df = sqlContext.createDataFrame([{'name': 'Alice', 'age': 1}])
-        # df.withColumn("maturity", maturity_udf(df.age))
-
-        # udf_subjectivity_detection = udf(subjectivity_detection, StringType())
-
-        # custom_udf = udf(lambda x: subjectivity_detection(x), StringType())
-
-        result = df.select([subjectivity_detection(x) for x in col('tweet')])
-
-        print(result)
-        # df = df.withColumn('tweet_super_count', custom_udf(df.tweet))
-        # df = df.withColumn("subjectivity", lit('saa'))
-
-        # print(df.take(5))
-        # df.printSchema()
-        # df.show(5)
+        df2.show(5)
         # df.pprint()
         # df.orderBy("tweet_count", ascending=False).show(10)
     except:
@@ -67,7 +55,7 @@ def process_rdd(time, rdd, header):
 
 # create spark configuration
 conf = SparkConf()
-conf.setAppName("TwitterStreamApp_JPBM")
+conf.setAppName("Bitcoin_Recommender")
 
 # create spark context with the above configuration
 sc = SparkContext(conf=conf)
