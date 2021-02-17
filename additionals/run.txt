@@ -1,0 +1,30 @@
+** pip in Python 2 **
+sudo apt install python-pip
+pip install requests requests_oauthlib kafka findspark kafka-python textblob
+
+* Versions: https://pypi.org/project/pyspark/
+pip install pyspark==2.4.5 (Working `pyspark.streaming.kafka`. `SQLContext` does not work.)
+
+** Kafka **
+* Download Kafka
+wget https://ftp.cixug.es/apache/kafka/2.7.0/kafka_2.13-2.7.0.tgz --no-check-certificate
+tar -xzf kafka_2.13-2.7.0.tgz
+cd kafka_2.13-2.7.0
+
+* Run zookeeper and Kafka [Leave open]
+cd kafka_2.13-2.7.0
+bin/zookeeper-server-start.sh config/zookeeper.properties
+bin/kafka-server-start.sh config/server.properties
+
+* Create topic [Create on each startup]
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic SentimentAnalysis
+
+* To check if it is running
+bin/kafka-topics.sh --list --zookeeper localhost:2181
+
+** twitter_kafka_spark **
+** Terminal 1 **
+python /home/osbdet/stream_group/1_twitter_to_kafka.py
+** Terminal 2 **
+export SPARK_LOCAL_HOSTNAME=localhost; export PYSPARK_PYTHON=/usr/bin/python3.7; spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.4 /home/osbdet/stream_group/2_kafka_to_spark.py
+
