@@ -2,8 +2,9 @@
 sudo apt install python-pip
 pip install requests requests_oauthlib kafka findspark kafka-python textblob
 
-* Versions: https://pypi.org/project/pyspark/
+* Versions: https://pypi.org/project/pyspark/ https://pypi.org/project/pyarrow/
 pip install pyspark==2.4.5 (Working `pyspark.streaming.kafka`. `SQLContext` does not work.)
+pip install pyarrow==0.10.0 (https://github.com/apache/spark/blob/branch-2.4/pom.xml)
 
 ** Kafka **
 * Download Kafka
