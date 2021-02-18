@@ -27,5 +27,6 @@ bin/kafka-topics.sh --list --zookeeper localhost:2181
 ** Terminal 1 **
 python /home/osbdet/stream_group/1_twitter_to_kafka.py
 ** Terminal 2 **
-export SPARK_LOCAL_HOSTNAME=localhost; export PYSPARK_PYTHON=/usr/bin/python3.7; spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.4 /home/osbdet/stream_group/2_kafka_to_spark.py
+cd ~/stream_group; export SPARK_LOCAL_HOSTNAME=localhost; export PYSPARK_PYTHON=/usr/bin/python3.7; spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.4 /home/osbdet/stream_group/2_kafka_to_spark.py
 
+cd ~/stream_group; export SPARK_LOCAL_HOSTNAME=localhost; export JAVA_HOME=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64; export PYSPARK_PYTHON=/usr/bin/python3.7; spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.4 /home/osbdet/stream_group/2_kafka_to_spark.py
