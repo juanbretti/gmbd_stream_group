@@ -44,7 +44,7 @@ def check_positive_negative(tweet):
     elif (positive and negative):
         res = 'Dubious'
     else:
-        res = 'Neutral'
+        res = 'Not enough information'
     return res
 udf_check_positive_negative = udf(check_positive_negative, StringType())
 
@@ -82,8 +82,9 @@ lines = lines.filter(lambda x: x not in ['', ' ', '#'])
 # Remove '_eot' and add counter
 tweets = lines.map(lambda x: check_positive_negative(x))
 tweets = tweets.map(lambda x: (x, 1))
+# Reduce using a window
 tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
-
+# Sort descending by key
 sorted_ = tweets_totals.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending=False))
 sorted_.pprint()
 
