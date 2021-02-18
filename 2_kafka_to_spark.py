@@ -13,17 +13,15 @@ from constants import *
 # https://stackoverflow.com/a/48874376/3780957
 def check_positive_negative(tweet):
     tweet = tweet.split(' ')
-    positive = any(word in words_positive for word in tweet)
-    negative = any(word in words_negative for word in tweet)
+    positive = len([w for w in tweet if w in words_positive])
+    negative = len([w for w in tweet if w in words_negative])
     # Check what is trending
-    if (positive and not negative):
+    if (positive > negative):
         res = 'Positive'
-    elif (not positive and negative):
+    elif (positive < negative):
         res = 'Negative'
-    elif (positive and negative):
-        res = 'Dubious'
     else:
-        res = 'Not enough information'
+        res = 'Dubious'
     return res
 
 # create spark configuration
