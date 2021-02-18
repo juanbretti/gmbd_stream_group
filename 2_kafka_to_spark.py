@@ -1,22 +1,13 @@
 from pyspark import SparkConf, SparkContext
 from pyspark.streaming import StreamingContext
-from pyspark.sql import Row, SQLContext
-from pyspark.sql.functions import regexp_replace, udf, col, lit
+from pyspark.sql import SQLContext
 from pyspark.sql.types import *
 from pyspark.sql.session import SparkSession
 from pyspark.streaming.kafka import KafkaUtils
-# import pandas as pd
+import pandas as pd
 import sys
 from textblob import TextBlob
 from constants import *
-
-def aggregate_tags_count(new_values, total_sum):
-    return sum(new_values) + (total_sum or 0)
-
-def get_sql_context_instance(spark_context):
-    if ('sqlContextSingletonInstance' not in globals()):
-        globals()['sqlContextSingletonInstance'] = SQLContext(spark_context)
-    return globals()['sqlContextSingletonInstance']
 
 # Defines if a tweet is positive, neutral or negative
 # https://stackoverflow.com/a/48874376/3780957
@@ -69,6 +60,7 @@ lines = lines.filter(lambda x: x not in ['', ' ', '#'])
 # Remove '_eot' and add counter
 tweets = lines.map(lambda x: check_positive_negative(x))
 tweets = tweets.map(lambda x: (x, 1))
+
 # Reduce using a window
 tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
 # Sort descending by key
