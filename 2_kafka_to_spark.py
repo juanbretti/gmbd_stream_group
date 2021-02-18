@@ -34,7 +34,6 @@ def check_positive_negative(tweet):
     else:
         res = 'Not enough information'
     return res
-udf_check_positive_negative = udf(check_positive_negative, StringType())
 
 # create spark configuration
 conf = SparkConf()
