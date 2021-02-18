@@ -33,6 +33,7 @@ def text_cleanup(line):
 # Defines if a tweet is positive, neutral or negative
 # https://stackoverflow.com/a/48874376/3780957
 def check_positive_negative(tweet):
+    tweet = tweet.split(' ')
     positive = any(word in words_positive for word in tweet)
     negative = any(word in words_negative for word in tweet)
     # Check what is trending
@@ -40,6 +41,8 @@ def check_positive_negative(tweet):
         res = 'Positive'
     elif (not positive and negative):
         res = 'Negative'
+    elif (positive and negative):
+        res = 'Dubious'
     else:
         res = 'Neutral'
     return res
@@ -81,7 +84,8 @@ tweets = lines.map(lambda x: check_positive_negative(x))
 tweets = tweets.map(lambda x: (x, 1))
 tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
 
-tweets_totals.pprint()
+sorted_ = tweets_totals.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending=False))
+sorted_.pprint()
 
 # start the streaming computation
 ssc.start()
