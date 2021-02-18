@@ -41,14 +41,30 @@ def process_rdd(time, rdd, header, words_positive, words_negative):
 
         # Filter is the tweet contains any of the predefined positive or negative terms
         # https://stackoverflow.com/a/48874376/3780957
-        df_positive = df.filter(col('tweet').rlike('(^|\s)(' + '|'.join(words_positive) + ')(\s|$)'))
-        df_negative = df.filter(col('tweet').rlike('(^|\s)(' + '|'.join(words_negative) + ')(\s|$)'))
 
-        # Check what is trending
-        if (df_positive.count() > df_negative.count()):
-            print('Positive: {} positive vs {} negative'.format(df_positive.count(), df_negative.count()))
-        else:
-            print('Negative: {} positive vs {} negative'.format(df_positive.count(), df_negative.count()))
+        def check_positive_negative(tweet):
+            df_positive = any(word in words_positive for word in tweet)
+            df_negative = any(word in words_negative for word in tweet)
+            # Check what is trending
+            if (df_positive and not df_negative):
+                res = 'Positive'
+            elif (not df_positive and not df_negative):
+                res = 'Neutral'
+            else:
+                res = 'Negative'
+            return res
+
+        udf_check_positive_negative = udf(check_positive_negative, StringType())
+
+        df = df.withColumn('trend', udf_check_positive_negative('tweet'))
+        df = df.where(col("trend").isNotNull())       
+
+
+        tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
+
+        df.show(50)
+                # print('Negative: {} positive vs {} negative'.format(df_positive.count(), df_negative.count()))
+
 
     except:
         e = sys.exc_info()[0]
@@ -71,11 +87,11 @@ ssc = StreamingContext(sc, 2)
 ssc.checkpoint("checkpoint_TwitterApp")
 
 # Read word for sentiment analysis
-ssc_session = SparkSession(sc)
+spark = SparkSession(sc)
 # Converted to Python lists
 # https://stackoverflow.com/a/64764406/3780957
-words_positive = ssc_session.read.option("header", "false").csv("words/positive-words.txt").select('_c0').rdd.flatMap(list).collect()
-words_negative = ssc_session.read.option("header", "false").csv("words/negative-words.txt").select('_c0').rdd.flatMap(list).collect()
+words_positive = spark.read.option("header", "false").csv("words/positive-words.txt").select('_c0').rdd.flatMap(list).collect()
+words_negative = spark.read.option("header", "false").csv("words/negative-words.txt").select('_c0').rdd.flatMap(list).collect()
 
 # read data from the port
 dataStream = KafkaUtils.createStream(ssc, KAFKA_ZOOKEEPER_SERVERS, 'streaming-consumer', {KAFKA_TOPIC: 1})
@@ -87,8 +103,7 @@ lines = dataStream.flatMap(lambda line: line.split('_eot'))
 lines = lines.filter(lambda x: x not in ['', ' ', '#'])
 # Remove '_eot' and add counter
 tweets = lines.map(lambda x: (x.replace('_eot', ''), 1))
-tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
-tweets_totals.foreachRDD(lambda time, rdd: process_rdd(time, rdd, "Tweets total", words_positive, words_negative))
+tweets.foreachRDD(lambda time, rdd: process_rdd(time, rdd, "Tweets total", words_positive, words_negative))
 
 # start the streaming computation
 ssc.start()
