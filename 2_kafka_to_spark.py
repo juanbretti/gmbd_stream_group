@@ -30,45 +30,20 @@ def text_cleanup(line):
     line = line.withColumn('tweet', regexp_replace('tweet', '\t', ' '))
     return line
 
-
-def process_rdd(time, rdd, header, words_positive, words_negative):
-    print("{sep} {header} {sep} {time} {sep}".format(sep="-"*5, time=str(time), header=header))
-    try:
-        sql_context = get_sql_context_instance(rdd.context)
-        row_rdd = rdd.map(lambda w: Row(tweet=w[0], tweet_count=w[1]))
-        df = sql_context.createDataFrame(row_rdd)
-        df = text_cleanup(df)
-
-        # Filter is the tweet contains any of the predefined positive or negative terms
-        # https://stackoverflow.com/a/48874376/3780957
-
-        def check_positive_negative(tweet):
-            df_positive = any(word in words_positive for word in tweet)
-            df_negative = any(word in words_negative for word in tweet)
-            # Check what is trending
-            if (df_positive and not df_negative):
-                res = 'Positive'
-            elif (not df_positive and not df_negative):
-                res = 'Neutral'
-            else:
-                res = 'Negative'
-            return res
-
-        udf_check_positive_negative = udf(check_positive_negative, StringType())
-
-        df = df.withColumn('trend', udf_check_positive_negative('tweet'))
-        df = df.where(col("trend").isNotNull())       
-
-
-        tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
-
-        df.show(50)
-                # print('Negative: {} positive vs {} negative'.format(df_positive.count(), df_negative.count()))
-
-
-    except:
-        e = sys.exc_info()[0]
-        print("Error: %s" % e)
+# Defines if a tweet is positive, neutral or negative
+# https://stackoverflow.com/a/48874376/3780957
+def check_positive_negative(tweet):
+    positive = any(word in words_positive for word in tweet)
+    negative = any(word in words_negative for word in tweet)
+    # Check what is trending
+    if (positive and not negative):
+        res = 'Positive'
+    elif (not positive and negative):
+        res = 'Negative'
+    else:
+        res = 'Neutral'
+    return res
+udf_check_positive_negative = udf(check_positive_negative, StringType())
 
 # create spark configuration
 conf = SparkConf()
@@ -102,8 +77,11 @@ lines = dataStream.flatMap(lambda line: line.split('_eot'))
 # Filter the null or hashtags
 lines = lines.filter(lambda x: x not in ['', ' ', '#'])
 # Remove '_eot' and add counter
-tweets = lines.map(lambda x: (x.replace('_eot', ''), 1))
-tweets.foreachRDD(lambda time, rdd: process_rdd(time, rdd, "Tweets total", words_positive, words_negative))
+tweets = lines.map(lambda x: check_positive_negative(x))
+tweets = tweets.map(lambda x: (x, 1))
+tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
+
+tweets_totals.pprint()
 
 # start the streaming computation
 ssc.start()
