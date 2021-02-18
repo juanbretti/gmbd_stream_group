@@ -3,7 +3,9 @@ from pyspark.streaming import StreamingContext
 from pyspark.sql import Row, SQLContext
 from pyspark.sql.functions import regexp_replace, udf, col, lit
 from pyspark.sql.types import *
+from pyspark.sql.session import SparkSession
 from pyspark.streaming.kafka import KafkaUtils
+# import pandas as pd
 import sys
 from textblob import TextBlob
 from constants import *
@@ -27,10 +29,8 @@ def text_cleanup(line):
     line = line.withColumn('tweet', regexp_replace('tweet', '\t', ' '))
     return line
 
-def polarity_detection(text):
-    return TextBlob(text).sentiment.polarity
 
-def process_rdd(time, rdd, header):
+def process_rdd(time, rdd, header, words_positive, words_negative):
     print("{sep} {header} {sep} {time} {sep}".format(sep="-"*5, time=str(time), header=header))
     try:
         sql_context = get_sql_context_instance(rdd.context)
@@ -38,17 +38,14 @@ def process_rdd(time, rdd, header):
         df = sql_context.createDataFrame(row_rdd)
         df = text_cleanup(df)
 
-        def dummy_function(data_str):
-            cleaned_str = 'dummyData'
-            return cleaned_str
+        # https://stackoverflow.com/a/48874376/3780957
+        df_positive = df.filter(col('tweet').rlike('(^|\s)(' + '|'.join(words_positive) + ')(\s|$)'))
+        df_negative = df.filter(col('tweet').rlike('(^|\s)(' + '|'.join(words_negative) + ')(\s|$)'))
 
-        dummy_function_udf = udf(dummy_function, StringType())
-        df2 = df.withColumn("dummy", dummy_function_udf(df['tweet']))
-        # df2 = df.withColumn("dummy", lit('lliitt'))
-
-        df2.show(5)
-        # df.pprint()
-        # df.orderBy("tweet_count", ascending=False).show(10)
+        if (df_positive.count() > df_negative.count()):
+            print('Positive: {} vs {}'.format(df_positive.count(), df_negative.count()))
+        else:
+            print('Negative: {} vs {}'.format(df_positive.count(), df_negative.count()))
     except:
         e = sys.exc_info()[0]
         print("Error: %s" % e)
@@ -69,6 +66,12 @@ ssc = StreamingContext(sc, 2)
 # TODO: setting a checkpoint to allow RDD recovery
 ssc.checkpoint("checkpoint_TwitterApp")
 
+# Read word for sentiment analysis
+ssc_session = SparkSession(sc)
+# https://stackoverflow.com/a/64764406/3780957
+words_positive = ssc_session.read.option("header", "false").csv("words/positive-words.txt").select('_c0').rdd.flatMap(list).collect()
+words_negative = ssc_session.read.option("header", "false").csv("words/negative-words.txt").select('_c0').rdd.flatMap(list).collect()
+
 # read data from the port
 dataStream = KafkaUtils.createStream(ssc, KAFKA_ZOOKEEPER_SERVERS, 'streaming-consumer', {KAFKA_TOPIC: 1})
 # No need to decode() from 'utf-8' in Python3
@@ -79,11 +82,12 @@ lines = dataStream.flatMap(lambda line: line.split('_eot'))
 lines = lines.filter(lambda x: x not in ['', ' ', '#'])
 # Remove '_eot' and add counter
 tweets = lines.map(lambda x: (x.replace('_eot', ''), 1))
-tweets_totals = tweets.updateStateByKey(aggregate_tags_count)
-tweets_totals.foreachRDD(lambda time, rdd: process_rdd(time, rdd, "Tweets total"))
+tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
+tweets_totals.foreachRDD(lambda time, rdd: process_rdd(time, rdd, "Tweets total", words_positive, words_negative))
 
 # start the streaming computation
 ssc.start()
 
 # wait for the streaming to finish
 ssc.awaitTermination()
+
