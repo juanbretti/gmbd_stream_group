@@ -19,6 +19,7 @@ def get_sql_context_instance(spark_context):
     return globals()['sqlContextSingletonInstance']
 
 # Tweet preprocessing
+# Remove unwanted characters from the tweet, line new lines and tabs
 def text_cleanup(line):
     line = line.withColumn('tweet', regexp_replace('tweet', r'http\S+', ''))
     line = line.withColumn('tweet', regexp_replace('tweet', '@\w+', ''))
@@ -38,14 +39,17 @@ def process_rdd(time, rdd, header, words_positive, words_negative):
         df = sql_context.createDataFrame(row_rdd)
         df = text_cleanup(df)
 
+        # Filter is the tweet contains any of the predefined positive or negative terms
         # https://stackoverflow.com/a/48874376/3780957
         df_positive = df.filter(col('tweet').rlike('(^|\s)(' + '|'.join(words_positive) + ')(\s|$)'))
         df_negative = df.filter(col('tweet').rlike('(^|\s)(' + '|'.join(words_negative) + ')(\s|$)'))
 
+        # Check what is trending
         if (df_positive.count() > df_negative.count()):
-            print('Positive: {} vs {}'.format(df_positive.count(), df_negative.count()))
+            print('Positive: {} positive vs {} negative'.format(df_positive.count(), df_negative.count()))
         else:
-            print('Negative: {} vs {}'.format(df_positive.count(), df_negative.count()))
+            print('Negative: {} positive vs {} negative'.format(df_positive.count(), df_negative.count()))
+
     except:
         e = sys.exc_info()[0]
         print("Error: %s" % e)
@@ -68,6 +72,7 @@ ssc.checkpoint("checkpoint_TwitterApp")
 
 # Read word for sentiment analysis
 ssc_session = SparkSession(sc)
+# Converted to Python lists
 # https://stackoverflow.com/a/64764406/3780957
 words_positive = ssc_session.read.option("header", "false").csv("words/positive-words.txt").select('_c0').rdd.flatMap(list).collect()
 words_negative = ssc_session.read.option("header", "false").csv("words/negative-words.txt").select('_c0').rdd.flatMap(list).collect()
