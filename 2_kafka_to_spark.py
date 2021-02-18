@@ -18,18 +18,6 @@ def get_sql_context_instance(spark_context):
         globals()['sqlContextSingletonInstance'] = SQLContext(spark_context)
     return globals()['sqlContextSingletonInstance']
 
-# Tweet preprocessing
-# Remove unwanted characters from the tweet, line new lines and tabs
-def text_cleanup(line):
-    line = line.withColumn('tweet', regexp_replace('tweet', r'http\S+', ''))
-    line = line.withColumn('tweet', regexp_replace('tweet', '@\w+', ''))
-    line = line.withColumn('tweet', regexp_replace('tweet', '#', ''))
-    line = line.withColumn('tweet', regexp_replace('tweet', 'RT', ''))
-    line = line.withColumn('tweet', regexp_replace('tweet', ':', ''))
-    line = line.withColumn('tweet', regexp_replace('tweet', '\n', ' '))
-    line = line.withColumn('tweet', regexp_replace('tweet', '\t', ' '))
-    return line
-
 # Defines if a tweet is positive, neutral or negative
 # https://stackoverflow.com/a/48874376/3780957
 def check_positive_negative(tweet):
