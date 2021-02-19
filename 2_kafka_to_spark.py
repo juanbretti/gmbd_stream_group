@@ -4,6 +4,7 @@ from pyspark.sql import SQLContext
 from pyspark.sql.types import *
 from pyspark.sql.session import SparkSession
 from pyspark.streaming.kafka import KafkaUtils
+from kafka import KafkaProducer
 import sys
 from constants import *
 
@@ -45,7 +46,7 @@ words_positive = ss_sc.read.option("header", "false").csv("words/positive-words.
 words_negative = ss_sc.read.option("header", "false").csv("words/negative-words.txt").select('_c0').rdd.flatMap(list).collect()
 
 # read data from the port
-dataStream = KafkaUtils.createStream(sc_sc, KAFKA_ZOOKEEPER_SERVERS, 'streaming-consumer', {KAFKA_TOPIC: 1})
+dataStream = KafkaUtils.createStream(sc_sc, KAFKA_ZOOKEEPER_SERVERS, 'streaming-consumer', {KAFKA_TOPIC_TWEET: 1})
 # No need to decode() from 'utf-8' in Python3
 dataStream = dataStream.map(lambda x: x[1].lower())
 # Split each single tweet. The "end of tweet" was set at the Twitter pull application
@@ -57,10 +58,18 @@ tweets = lines.map(lambda x: check_positive_negative(x))
 tweets = tweets.map(lambda x: (x, 1))
 
 # Reduce using a window
-tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 10, 2)
+tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 5*60, 10)
 # Sort descending by key
-sorted_ = tweets_totals.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending=False))
-sorted_.pprint()
+tweets_totals_sorted = tweets_totals.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending=False))
+tweets_totals_sorted.pprint()
+
+def send_reduced_to_kafka(time, rdd):
+    # Send trend to Kafka
+    producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS],
+                            value_serializer=lambda x: x.encode('utf-8'))
+    producer.send(KAFKA_TOPIC_TREND, value=str(rdd.take(1)))
+
+tweets_totals_sorted.foreachRDD(lambda time, rdd: send_reduced_to_kafka(time, rdd))
 
 # start the streaming computation
 sc_sc.start()

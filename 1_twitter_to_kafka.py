@@ -7,13 +7,16 @@ from constants import *
 
 my_auth = requests_oauthlib.OAuth1(CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, ACCESS_SECRET)
 
+# https://stream.twitter.com/1.1/statuses/filter.json?delimited=length&track=twitterapi:
+# https://stream.twitter.com/1.1/statuses/filter.json?track=twitter
+
 def get_tweets():
     # https://developer.twitter.com/en/docs/twitter-api/v1/tweets/filter-realtime/guides/basic-stream-parameters
     url = 'https://stream.twitter.com/1.1/statuses/filter.json'
     # Continental USA, https://boundingbox.klokantech.com/
-    query_data = [('language', 'en'), ('locations', '-130,-20,100,50'), ('track','love')]
-    # query_data = [('language', 'en'), ('locations', '-169.7369071437,23.6595686079,-64.35549002,71.60482164'), ('track','bitcoin')]
-    # query_data = [('language', 'en'), ('locations', '-169.7369071437,23.6595686079,-64.35549002,71.60482164'), ('track','bitcoin,monero,ripple,ybcoin,dogecoin,dash,maidsafecoin,lisk,siacoin')]
+    # ('locations', '-169.7369071437,23.6595686079,-64.35549002,71.60482164')
+    query_data = [('delimited', 'length'), ('language', 'en'), ('track','bitcoin,monero,ripple,ybcoin,dogecoin,dash,maidsafecoin,lisk,siacoin,criptocurrency,cripto'), ('locations', '-169.7369071437,23.6595686079,-64.35549002,71.60482164')]
+    query_data = [('delimited', 'length'), ('language', 'en'), ('track','bitcoin,monero,ripple,ybcoin,dogecoin,dash,maidsafecoin,lisk,siacoin,criptocurrency,cripto')]
     query_url = url + '?' + '&'.join([str(t[0]) + '=' + str(t[1]) for t in query_data])
     response = requests.get(query_url, auth=my_auth, stream=True)
     print(query_url, response)
@@ -46,4 +49,4 @@ def send_tweets_to_kafka(http_resp, producer, topic):
 http_resp = get_tweets()
 producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS],
                          value_serializer=lambda x: x.encode('utf-8'))
-send_tweets_to_kafka(http_resp, producer, KAFKA_TOPIC)
+send_tweets_to_kafka(http_resp, producer, KAFKA_TOPIC_TWEET)

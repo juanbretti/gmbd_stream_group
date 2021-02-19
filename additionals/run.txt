@@ -19,14 +19,20 @@ bin/kafka-server-start.sh config/server.properties
 
 * Create topic [Create on each startup]
 bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic SentimentAnalysis
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic SentimentTrend
 
 * To check if it is running
 bin/kafka-topics.sh --list --zookeeper localhost:2181
 
 ** twitter_kafka_spark **
 ** Terminal 1 **
-python /home/osbdet/stream_group/1_twitter_to_kafka.py
+export PYSPARK_PYTHON=/usr/bin/python2.7; python /home/osbdet/stream_group/1_twitter_to_kafka.py
 ** Terminal 2 **
-cd ~/stream_group; export SPARK_LOCAL_HOSTNAME=localhost; export PYSPARK_PYTHON=/usr/bin/python3.7; spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.4 /home/osbdet/stream_group/2_kafka_to_spark.py
-
 cd ~/stream_group; export SPARK_LOCAL_HOSTNAME=localhost; export JAVA_HOME=/usr/lib/jvm/adoptopenjdk-8-hotspot-amd64; export PYSPARK_PYTHON=/usr/bin/python3.7; spark-submit --packages org.apache.spark:spark-streaming-kafka-0-8_2.11:2.4.4 /home/osbdet/stream_group/2_kafka_to_spark.py
+** Terminal 3 **
+export PYSPARK_PYTHON=/usr/bin/python2.7; python /home/osbdet/stream_group/3_kafka_consumer.py
+
+** Check default Python, has to be at 2.7
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
+sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.7 1
+sudo update-alternatives --remove-all python

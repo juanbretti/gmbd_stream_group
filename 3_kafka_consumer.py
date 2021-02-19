@@ -6,9 +6,9 @@ from json import loads
 from constants import *
 
 # To consume latest messages and auto-commit offsets
-consumer = KafkaConsumer(KAFKA_TOPIC,
+consumer = KafkaConsumer(KAFKA_TOPIC_TREND,
                          bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS],
-                         value_deserializer=lambda x: x.decode('utf-8'))
+                         value_deserializer=lambda x: x.decode('utf-8').replace('_eot', ' '))
 
 for message in consumer:
     # message value and key are raw bytes -- decode if necessary!
