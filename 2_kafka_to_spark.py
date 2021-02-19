@@ -1,5 +1,6 @@
 from pyspark import SparkConf, SparkContext
 from pyspark.streaming import StreamingContext
+from pyspark.sql import SQLContext
 from pyspark.sql.types import *
 from pyspark.sql.session import SparkSession
 from pyspark.streaming.kafka import KafkaUtils
