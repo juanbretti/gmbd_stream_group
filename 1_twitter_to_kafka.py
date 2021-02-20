@@ -16,7 +16,7 @@ def get_tweets():
     # Continental USA, https://boundingbox.klokantech.com/
     # ('locations', '-169.7369071437,23.6595686079,-64.35549002,71.60482164')
     query_data = [('delimited', 'length'), ('language', 'en'), ('track','bitcoin,monero,ripple,ybcoin,dogecoin,dash,maidsafecoin,lisk,siacoin,criptocurrency,cripto'), ('locations', '-169.7369071437,23.6595686079,-64.35549002,71.60482164')]
-    query_data = [('delimited', 'length'), ('language', 'en'), ('track','bitcoin,monero,ripple,ybcoin,dogecoin,dash,maidsafecoin,lisk,siacoin,criptocurrency,cripto')]
+    # query_data = [('delimited', 'length'), ('language', 'en'), ('track','bitcoin,monero,ripple,ybcoin,dogecoin,dash,maidsafecoin,lisk,siacoin,criptocurrency,cripto')]
     query_url = url + '?' + '&'.join([str(t[0]) + '=' + str(t[1]) for t in query_data])
     response = requests.get(query_url, auth=my_auth, stream=True)
     print(query_url, response)
