@@ -35,7 +35,6 @@ sc.setLogLevel("ERROR")
 sc_sc = StreamingContext(sc, 2)
 
 # setting a checkpoint to allow RDD recovery
-# TODO: setting a checkpoint to allow RDD recovery
 sc_sc.checkpoint("checkpoint_TwitterApp")
 
 # Read word for sentiment analysis

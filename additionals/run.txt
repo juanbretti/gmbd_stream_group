@@ -1,6 +1,6 @@
 ** pip in Python 2 **
 sudo apt install python-pip
-pip install requests requests_oauthlib kafka findspark kafka-python textblob
+pip install requests requests_oauthlib kafka findspark kafka-python
 
 * Versions: https://pypi.org/project/pyspark/ https://pypi.org/project/pyarrow/
 pip install pyspark==2.4.5 (Working `pyspark.streaming.kafka`. `SQLContext` does not work.)
@@ -10,7 +10,6 @@ pip install pyarrow==0.10.0 (https://github.com/apache/spark/blob/branch-2.4/pom
 * Download Kafka
 wget https://ftp.cixug.es/apache/kafka/2.7.0/kafka_2.13-2.7.0.tgz --no-check-certificate
 tar -xzf kafka_2.13-2.7.0.tgz
-cd kafka_2.13-2.7.0
 
 * Run zookeeper and Kafka [Leave open]
 cd kafka_2.13-2.7.0
