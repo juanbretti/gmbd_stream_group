@@ -10,7 +10,7 @@ import sys
 import time
 
 # Parameters
-subreddit = 'bitcoin'
+subreddit = 'Bitcoin'
 limit = 1
 timeframe = 'month' #hour, day, week, month, year, all
 listing = 'new' # controversial, best, hot, new, random, rising, top
