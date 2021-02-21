@@ -45,6 +45,7 @@ def send_tweets_to_kafka(http_resp, producer, topic):
         except:
             e = sys.exc_info()[0]
             print("Error: %s" % e)
+            print("-"*20)
 
 http_resp = get_tweets()
 producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS],

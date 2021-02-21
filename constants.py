@@ -15,3 +15,8 @@ KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
 KAFKA_ZOOKEEPER_SERVERS = 'localhost:2181'
 KAFKA_TOPIC_TWEET = 'SentimentAnalysis'
 KAFKA_TOPIC_TREND = 'SentimentTrend'
+
+# https://www.reddit.com/prefs/apps
+# note that CLIENT_ID refers to 'personal use script' and SECRET_TOKEN to 'token'
+REDDIT_PERSONAL_USE = 'Ds20CQznrprcsg'
+REDDIT_SECRET_TOKEN = 'oBFh66yA9v5DK4xepXzQKmexjWvnjQ'

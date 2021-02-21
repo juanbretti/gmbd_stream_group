@@ -5,6 +5,7 @@ from pyspark.sql.types import *
 from pyspark.sql.session import SparkSession
 from pyspark.streaming.kafka import KafkaUtils
 from kafka import KafkaProducer
+from art import *
 import sys
 from constants import *
 
@@ -60,8 +61,13 @@ tweets = tweets.map(lambda x: (x, 1))
 tweets_totals = tweets.reduceByKeyAndWindow(lambda x, y: x + y, lambda x, y: x - y, 5*60, 10)
 # Sort descending by key
 tweets_totals_sorted = tweets_totals.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending=False))
+
+# Print
+print('\n'*50)
+tprint('Processing\nand\nProducer', "Standard")
 tweets_totals_sorted.pprint()
 
+# Send processed output to Kafka
 def send_reduced_to_kafka(time, rdd):
     # Send trend to Kafka
     producer = KafkaProducer(bootstrap_servers=[KAFKA_BOOTSTRAP_SERVERS],
